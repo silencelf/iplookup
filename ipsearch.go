@@ -25,17 +25,23 @@ func main() {
 				Aliases: []string{"f"},
 				Usage:   "file name for ips",
 			},
+			&cli.StringFlag{
+				Name:    "language",
+				Value:   "zh-CN",
+				Aliases: []string{"l"},
+				Usage:   "language for country name",
+			},
 		},
 		Action: func(c *cli.Context) error {
 			ip := c.Args().Get(0)
 			if ip != "" {
-				country, err := singleIP(ip)
+				country, err := singleIP(ip, c.String("l"))
 				if err != nil {
 					log.Fatal(err)
 				}
 				fmt.Println(country)
 			} else if c.String("f") != "" {
-				batchIP(c.String("f"))
+				batchIP(c.String("f"), c.String("l"))
 			} else {
 				fmt.Println("Please read the usage.")
 			}
@@ -49,7 +55,8 @@ func main() {
 	}
 }
 
-func singleIP(ipString string) (string, error) {
+func singleIP(ipString string, language string) (string, error) {
+	fmt.Println(language)
 	db, err := geoip2.FromBytes(ipDB)
 	if err != nil {
 		return "", err
@@ -60,10 +67,10 @@ func singleIP(ipString string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	return record.Country.Names["zh-CN"], nil
+	return record.Country.Names[language], nil
 }
 
-func batchIP(fileName string) error {
+func batchIP(fileName string, language string) error {
 	file, err := os.Open(fileName)
 	if err != nil {
 		return err
@@ -80,7 +87,7 @@ func batchIP(fileName string) error {
 
 	for scanner.Scan() {
 		ip := scanner.Text()
-		name, err := printCountry(db, ip)
+		name, err := countryName(db, ip, language)
 		if err != nil {
 			fmt.Println(err)
 		}
@@ -90,12 +97,12 @@ func batchIP(fileName string) error {
 	return nil
 }
 
-func printCountry(db *geoip2.Reader, ipAddr string) (string, error) {
+func countryName(db *geoip2.Reader, ipAddr string, language string) (string, error) {
 	// If you are using strings that may be invalid, check that ip is not nil
 	ip := net.ParseIP(ipAddr)
 	record, err := db.Country(ip)
 	if err != nil {
 		return "", err
 	}
-	return record.Country.Names["zh-CN"], nil
+	return record.Country.Names[language], nil
 }
