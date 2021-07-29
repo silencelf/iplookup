@@ -18,7 +18,7 @@ var ipDB []byte
 
 func main() {
 	app := &cli.App{
-		Name:  "ipsearch",
+		Name:  "iplookup",
 		Usage: "resolve ip addresses to contries",
 		Flags: []cli.Flag{
 			&cli.StringFlag{

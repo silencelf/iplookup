@@ -1,4 +1,4 @@
-module logs
+module iplookup
 
 go 1.16
 
