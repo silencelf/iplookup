@@ -4,6 +4,7 @@ import (
 	"bufio"
 	_ "embed"
 	"fmt"
+	"io"
 	"log"
 	"net"
 	"os"
@@ -32,22 +33,7 @@ func main() {
 				Usage:   "language for country name",
 			},
 		},
-		Action: func(c *cli.Context) error {
-			ip := c.Args().Get(0)
-			if ip != "" {
-				country, err := singleIP(ip, c.String("l"))
-				if err != nil {
-					log.Fatal(err)
-				}
-				fmt.Println(country)
-			} else if c.String("f") != "" {
-				batchIP(c.String("f"), c.String("l"))
-			} else {
-				fmt.Println("Please read the usage.")
-			}
-
-			return nil
-		},
+		Action: commandHandler,
 	}
 	err := app.Run(os.Args)
 	if err != nil {
@@ -55,45 +41,69 @@ func main() {
 	}
 }
 
-func singleIP(ipString string, language string) (string, error) {
+func commandHandler(c *cli.Context) error {
+	ip := c.Args().Get(0)
 	db, err := geoip2.FromBytes(ipDB)
 	if err != nil {
-		return "", err
+		return err
+	}
+	if ip != "" {
+		country, err := singleIP(db, ip, c.String("l"))
+		if err != nil {
+			log.Fatal(err)
+		}
+		fmt.Println(country)
+	} else if isInputFromPipe() {
+		batchIP(db, os.Stdin, c.String("language"))
+	} else if c.String("f") != "" {
+		file, err := os.Open(c.String("file"))
+		if err != nil {
+			return err
+		}
+		defer file.Close()
+		countries, err := batchIP(db, file, c.String("language"))
+		if err != nil {
+			return err
+		}
+		counts := make(map[string]int)
+		for _, country := range countries {
+			counts[country.country]++
+		}
+		fmt.Println(counts)
+	} else {
+		fmt.Println("Please read the usage.")
 	}
 
+	return nil
+}
+
+func singleIP(db *geoip2.Reader, ipString string, language string) (ipCountry, error) {
 	ip := net.ParseIP(ipString)
 	record, err := db.Country(ip)
 	if err != nil {
-		return "", err
+		return ipCountry{}, err
 	}
-	return record.Country.Names[language], nil
+	return ipCountry{ipString, record.Country.Names[language]}, nil
 }
 
-func batchIP(fileName string, language string) error {
-	file, err := os.Open(fileName)
-	if err != nil {
-		return err
-	}
-	defer file.Close()
+type ipCountry struct {
+	ip      string
+	country string
+}
 
-	scanner := bufio.NewScanner(file)
-	counts := make(map[string]int)
-	db, err := geoip2.FromBytes(ipDB)
-	if err != nil {
-		return err
-	}
-	defer db.Close()
+func batchIP(db *geoip2.Reader, r io.Reader, language string) ([]ipCountry, error) {
+	scanner := bufio.NewScanner(r)
+	var countries []ipCountry
 
 	for scanner.Scan() {
 		ip := scanner.Text()
 		name, err := countryName(db, ip, language)
 		if err != nil {
-			fmt.Println(err)
+			return nil, err
 		}
-		counts[name]++
+		countries = append(countries, ipCountry{ip, name})
 	}
-	fmt.Println(counts)
-	return nil
+	return countries, nil
 }
 
 func countryName(db *geoip2.Reader, ipAddr string, language string) (string, error) {
@@ -104,4 +114,9 @@ func countryName(db *geoip2.Reader, ipAddr string, language string) (string, err
 		return "", err
 	}
 	return record.Country.Names[language], nil
+}
+
+func isInputFromPipe() bool {
+	fileInfo, _ := os.Stdin.Stat()
+	return fileInfo.Mode()&os.ModeCharDevice == 0
 }
