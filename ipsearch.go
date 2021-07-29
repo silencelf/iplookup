@@ -52,7 +52,7 @@ func commandHandler(c *cli.Context) error {
 		if err != nil {
 			log.Fatal(err)
 		}
-		printCountries([]ipCountry{country})
+		fmt.Println(country.country)
 	} else if isInputFromPipe() {
 		countries, err := batchIP(db, os.Stdin, c.String("language"))
 		if err != nil {
@@ -82,7 +82,9 @@ func printCountries(countries []ipCountry) {
 	for _, country := range countries {
 		counts[country.country]++
 	}
-	fmt.Println(counts)
+	for country, count := range counts {
+		fmt.Printf("%s: %d\n", country, count)
+	}
 }
 
 func singleIP(db *geoip2.Reader, ipString string, language string) (ipCountry, error) {
