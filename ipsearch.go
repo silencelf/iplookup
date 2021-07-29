@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	_ "embed"
 	"fmt"
 	"log"
 	"net"
@@ -11,34 +12,34 @@ import (
 	"github.com/urfave/cli/v2"
 )
 
+//go:embed Country.mmdb
+var ipDB []byte
+
 func main() {
 	app := &cli.App{
-		Name:  "IpSearch",
+		Name:  "ipsearch",
 		Usage: "resolve ip addresses to contries",
+		Flags: []cli.Flag{
+			&cli.StringFlag{
+				Name:    "file",
+				Aliases: []string{"f"},
+				Usage:   "file name for ips",
+			},
+		},
 		Action: func(c *cli.Context) error {
-			arg := c.Args().Get(0)
-			fmt.Println(arg)
-			file, err := os.Open("ip.txt")
-			if err != nil {
-				return err
-			}
-			defer file.Close()
-
-			scanner := bufio.NewScanner(file)
-			counts := make(map[string]int)
-			db, err := geoip2.Open("country.mmdb")
-			if err != nil {
-				return err
-			}
-			defer db.Close()
-
-			for scanner.Scan() {
-				ip := scanner.Text()
-				name := printCountry(db, ip)
-				counts[name]++
+			ip := c.Args().Get(0)
+			if ip != "" {
+				country, err := singleIP(ip)
+				if err != nil {
+					log.Fatal(err)
+				}
+				fmt.Println(country)
+			} else if c.String("f") != "" {
+				batchIP(c.String("f"))
+			} else {
+				fmt.Println("Please read the usage.")
 			}
 
-			fmt.Println(counts)
 			return nil
 		},
 	}
@@ -48,15 +49,53 @@ func main() {
 	}
 }
 
-func printCountry(db *geoip2.Reader, ipAddr string) string {
+func singleIP(ipString string) (string, error) {
+	db, err := geoip2.FromBytes(ipDB)
+	if err != nil {
+		return "", err
+	}
+
+	ip := net.ParseIP(ipString)
+	record, err := db.Country(ip)
+	if err != nil {
+		return "", err
+	}
+	return record.Country.Names["zh-CN"], nil
+}
+
+func batchIP(fileName string) error {
+	file, err := os.Open(fileName)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+
+	scanner := bufio.NewScanner(file)
+	counts := make(map[string]int)
+	db, err := geoip2.FromBytes(ipDB)
+	if err != nil {
+		return err
+	}
+	defer db.Close()
+
+	for scanner.Scan() {
+		ip := scanner.Text()
+		name, err := printCountry(db, ip)
+		if err != nil {
+			fmt.Println(err)
+		}
+		counts[name]++
+	}
+	fmt.Println(counts)
+	return nil
+}
+
+func printCountry(db *geoip2.Reader, ipAddr string) (string, error) {
 	// If you are using strings that may be invalid, check that ip is not nil
 	ip := net.ParseIP(ipAddr)
 	record, err := db.Country(ip)
 	if err != nil {
-		log.Fatal(err)
+		return "", err
 	}
-	//fmt.Printf("Chinese country name: %v\n", record.Country.Names["zh-CN"])
-	//fmt.Printf("ISO country code: %v\n", record.Country.IsoCode)
-	//fmt.Printf("Coordinates: %v, %v\n", record.Location.Latitude, record.Location.Longitude)
-	return record.Country.Names["zh-CN"]
+	return record.Country.Names["zh-CN"], nil
 }
