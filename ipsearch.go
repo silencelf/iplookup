@@ -54,7 +54,15 @@ func commandHandler(c *cli.Context) error {
 		}
 		fmt.Println(country)
 	} else if isInputFromPipe() {
-		batchIP(db, os.Stdin, c.String("language"))
+		countries, err := batchIP(db, os.Stdin, c.String("language"))
+		if err != nil {
+			return err
+		}
+		counts := make(map[string]int)
+		for _, country := range countries {
+			counts[country.country]++
+		}
+		fmt.Println(counts)
 	} else if c.String("f") != "" {
 		file, err := os.Open(c.String("file"))
 		if err != nil {
