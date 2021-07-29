@@ -58,11 +58,7 @@ func commandHandler(c *cli.Context) error {
 		if err != nil {
 			return err
 		}
-		counts := make(map[string]int)
-		for _, country := range countries {
-			counts[country.country]++
-		}
-		fmt.Println(counts)
+		printCountries(countries)
 	} else if c.String("f") != "" {
 		file, err := os.Open(c.String("file"))
 		if err != nil {
@@ -73,16 +69,20 @@ func commandHandler(c *cli.Context) error {
 		if err != nil {
 			return err
 		}
-		counts := make(map[string]int)
-		for _, country := range countries {
-			counts[country.country]++
-		}
-		fmt.Println(counts)
+		printCountries(countries)
 	} else {
 		fmt.Println("Please read the usage.")
 	}
 
 	return nil
+}
+
+func printCountries(countries []ipCountry) {
+	counts := make(map[string]int)
+	for _, country := range countries {
+		counts[country.country]++
+	}
+	fmt.Println(counts)
 }
 
 func singleIP(db *geoip2.Reader, ipString string, language string) (ipCountry, error) {
