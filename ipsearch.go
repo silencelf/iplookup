@@ -52,7 +52,7 @@ func commandHandler(c *cli.Context) error {
 		if err != nil {
 			log.Fatal(err)
 		}
-		fmt.Println(country)
+		printCountries([]ipCountry{country})
 	} else if isInputFromPipe() {
 		countries, err := batchIP(db, os.Stdin, c.String("language"))
 		if err != nil {
