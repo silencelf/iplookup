@@ -56,7 +56,6 @@ func main() {
 }
 
 func singleIP(ipString string, language string) (string, error) {
-	fmt.Println(language)
 	db, err := geoip2.FromBytes(ipDB)
 	if err != nil {
 		return "", err
