@@ -9,7 +9,13 @@ example:
 ```
 ### run the command to process raw log
 grep -o -E '\d+\.\d+\.\d+\.\d+'  fail2ban.log | sort > ip.txt
-### run the program
-go run ipsearch.go
 ### installation
-go install ipsearch.go
+go install iplookup.go
+### run the program
+go run iplookup.go 1.1.1.1
+go run iplookup.go -f filename
+### if it's installed:
+iplookup 1.1.1.1
+iplookup.go -f filename
+### work together with unix pipelines
+grep -o -E '\d+\.\d+\.\d+\.\d+'  fail2ban.log | uniq | iplookup
