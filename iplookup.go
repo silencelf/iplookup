@@ -19,7 +19,7 @@ var ipDB []byte
 func main() {
 	app := &cli.App{
 		Name:  "iplookup",
-		Usage: "resolve ip addresses to contries",
+		Usage: "resolve ip addresses to countries",
 		Flags: []cli.Flag{
 			&cli.StringFlag{
 				Name:    "file",
