@@ -24,7 +24,7 @@ func main() {
 			&cli.StringFlag{
 				Name:    "file",
 				Aliases: []string{"f"},
-				Usage:   "file name for ips",
+				Usage:   "file name for IP list",
 			},
 			&cli.StringFlag{
 				Name:    "language",
