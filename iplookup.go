@@ -1,3 +1,4 @@
+// simple tool to parse ip to geo locations
 package main
 
 import (
