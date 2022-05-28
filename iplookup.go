@@ -51,7 +51,7 @@ func commandHandler(c *cli.Context) error {
 	if ip != "" {
 		country, err := singleIP(db, ip, c.String("l"))
 		if err != nil {
-			log.Fatal(err)
+            return err
 		}
 		fmt.Println(country.country)
 	} else if isInputFromPipe() {
@@ -118,7 +118,6 @@ func batchIP(db *geoip2.Reader, r io.Reader, language string) ([]ipCountry, erro
 }
 
 func countryName(db *geoip2.Reader, ipAddr string, language string) (string, error) {
-	// If you are using strings that may be invalid, check that ip is not nil
 	ip := net.ParseIP(ipAddr)
 	record, err := db.Country(ip)
 	if err != nil {
