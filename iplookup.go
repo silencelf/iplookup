@@ -29,7 +29,7 @@ func main() {
 			},
 			&cli.StringFlag{
 				Name:    "language",
-				Value:   "zh-CN",
+				Value:   "en",
 				Aliases: []string{"l"},
 				Usage:   "language for country name",
 			},
@@ -51,15 +51,9 @@ func commandHandler(c *cli.Context) error {
 	if ip != "" {
 		country, err := singleIP(db, ip, c.String("l"))
 		if err != nil {
-            return err
-		}
-		fmt.Println(country.country)
-	} else if isInputFromPipe() {
-		countries, err := batchIP(db, os.Stdin, c.String("language"))
-		if err != nil {
 			return err
 		}
-		printCountries(countries)
+		fmt.Println(country.country)
 	} else if c.String("f") != "" {
 		file, err := os.Open(c.String("file"))
 		if err != nil {
