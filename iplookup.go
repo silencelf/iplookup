@@ -33,6 +33,12 @@ func main() {
 				Aliases: []string{"l"},
 				Usage:   "language for country name",
 			},
+			&cli.StringFlag{
+				Name:    "domain",
+				Value:   "",
+				Aliases: []string{"d"},
+				Usage:   "domain to resolve for ip",
+			},
 		},
 		Action: commandHandler,
 	}
@@ -44,18 +50,32 @@ func main() {
 
 func commandHandler(c *cli.Context) error {
 	ip := c.Args().Get(0)
+	lang := c.String("l")
 	db, err := geoip2.FromBytes(ipDB)
 	if err != nil {
 		return err
 	}
-	if ip != "" {
-		country, err := singleIP(db, ip, c.String("l"))
+
+	if domain := c.String("d"); domain != "" {
+		ps, err := net.LookupIP(domain)
+		if err != nil {
+			return err
+		}
+		for _, ip := range ps {
+			country, err := singleIP(db, ip.String(), lang)
+			if err != nil {
+				log.Println(err)
+			}
+			fmt.Println(country.country, ":", ip)
+		}
+	} else if ip != "" {
+		country, err := singleIP(db, ip, lang)
 		if err != nil {
 			return err
 		}
 		fmt.Println(country.country)
 	} else if isInputFromPipe() {
-		countries, err := batchIP(db, os.Stdin, c.String("language"))
+		countries, err := batchIP(db, os.Stdin, lang)
 		if err != nil {
 			return err
 		}
@@ -66,7 +86,7 @@ func commandHandler(c *cli.Context) error {
 			return err
 		}
 		defer file.Close()
-		countries, err := batchIP(db, file, c.String("language"))
+		countries, err := batchIP(db, file, lang)
 		if err != nil {
 			return err
 		}
