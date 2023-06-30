@@ -66,7 +66,7 @@ func commandHandler(c *cli.Context) error {
 			if err != nil {
 				log.Println(err)
 			}
-			fmt.Println(country.country, ":", ip)
+			fmt.Println(country)
 		}
 	} else if ip != "" {
 		country, err := singleIP(db, ip, lang)
@@ -74,7 +74,7 @@ func commandHandler(c *cli.Context) error {
 			return err
 		}
 		fmt.Println(country.country)
-	} else if isInputFromPipe() {
+	} else if fromPipe() {
 		countries, err := batchIP(db, os.Stdin, lang)
 		if err != nil {
 			return err
@@ -122,6 +122,10 @@ type ipCountry struct {
 	country string
 }
 
+func (ic ipCountry) String() string {
+	return fmt.Sprintf("%s %s", ic.country, ic.ip)
+}
+
 func batchIP(db *geoip2.Reader, r io.Reader, language string) ([]ipCountry, error) {
 	scanner := bufio.NewScanner(r)
 	var countries []ipCountry
@@ -146,7 +150,7 @@ func countryName(db *geoip2.Reader, ipAddr string, language string) (string, err
 	return record.Country.Names[language], nil
 }
 
-func isInputFromPipe() bool {
+func fromPipe() bool {
 	fileInfo, _ := os.Stdin.Stat()
 	return fileInfo.Mode()&os.ModeCharDevice == 0
 }
